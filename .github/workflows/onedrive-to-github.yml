@@ -60,5 +60,6 @@ jobs:
               git push
           else
               echo "No new images to add."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for pushing changes
