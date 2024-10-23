@@ -25,6 +25,12 @@ jobs:
 
           echo "$response" > response_log.txt
 
+          # Check if response is empty or null
+          if [[ -z "$response" ]]; then
+              echo "Error: No response from OneDrive API."
+              exit 1
+          fi
+
           # Parse image URLs safely
           urls=$(echo "$response" | jq -r '.value[] | select(.file) | {url: .["@microsoft.graph.downloadUrl"], name: .name} | "\(.url) \(.name)"')
           if [[ -z "$urls" ]]; then
