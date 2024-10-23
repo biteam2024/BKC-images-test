@@ -33,8 +33,10 @@ jobs:
           fi
           echo "$urls" > image_urls.txt
           
-          # Download images
+          # Ensure the directory exists
           mkdir -p downloaded_images
+
+          # Download images
           while read -r url name; do
               # Sanitize the filename by limiting length and removing special characters
               extension="${name##*.}"  # Get the file extension
