@@ -35,22 +35,18 @@ jobs:
           
           # Download images
           mkdir -p downloaded_images
-          while read -r url name; do
+          while read -r url; do
+              # Extract the base name from the URL
+              filename=$(basename "$url")
+              
               # Sanitize the filename by limiting length and removing special characters
-              extension="${name##*.}"  # Get the file extension
-              sanitized_filename=$(echo "$name" | tr -dc '[:alnum:]._-' | cut -c1-30)  # Limit to 30 characters
-              sanitized_filename="$sanitized_filename.$extension"  # Reattach the extension
+              sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
 
-              # Check if the image already exists
-              if [[ ! -f "downloaded_images/$sanitized_filename" ]]; then
-                  # Download the image
-                  if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
-                      echo "Downloaded: $sanitized_filename"
-                  else
-                      echo "Failed to download: $url"
-                  fi
+              # Download the image
+              if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
+                  echo "Downloaded: $sanitized_filename"
               else
-                  echo "Image already exists: $sanitized_filename"
+                  echo "Failed to download: $url"
               fi
           done < image_urls.txt
 
@@ -58,24 +54,8 @@ jobs:
         run: |
           git config --local user.name "biteam2024"
           git config --local user.email "bi.analytics@arthdesignbuild.com"
-          
-          # Check if the downloaded_images folder exists
-          if [ -d "downloaded_images" ]; then
-              echo "Folder 'downloaded_images' exists."
-          else
-              echo "Folder 'downloaded_images' does not exist. Creating it."
-              mkdir downloaded_images
-          fi
-
-          # Add the images to git
-          git add downloaded_images/* || echo "No new images to add."
-          
-          # Commit and push changes if there are any new images
-          if ! git diff --cached --quiet; then
-              git commit -m "Add images from OneDrive"
-              git push
-          else
-              echo "No changes to commit."
-          fi
+          git add downloaded_images/*
+          git commit -m "Add images from OneDrive"
+          git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for pushing changes
