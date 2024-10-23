@@ -24,8 +24,17 @@ jobs:
           response=$(curl -s -X GET "https://graph.microsoft.com/v1.0/me/drive/items/$FOLDER_ID/children" \
             -H "Authorization: Bearer $ONEDRIVE_ACCESS_TOKEN")
 
+          # Print the response for debugging
+          echo "Response: $response"
+
+          # Check if the response is empty
+          if [[ -z "$response" ]]; then
+            echo "Failed to fetch images. Response is empty."
+            exit 1
+          fi
+
           # Parse image URLs
-          echo "$response" | jq -r '.value[] | select(.file) | .@microsoft.graph.downloadUrl' > image_urls.txt
+          echo "$response" | jq -r '.value[] | select(.file != null) | .@microsoft.graph.downloadUrl' > image_urls.txt
 
           # Download images
           mkdir -p downloaded_images
