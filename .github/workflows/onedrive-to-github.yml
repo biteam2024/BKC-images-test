@@ -83,8 +83,10 @@ jobs:
           # Read new images from file and add them to git
           if [ -f new_images.txt ]; then
               while read -r new_image; do
-                  # Enclose filename in quotes to handle spaces
-                  git add "downloaded_images/$new_image"
+                  # Ensure the image exists before adding
+                  if [ -f "downloaded_images/$new_image" ]; then
+                      git add "downloaded_images/$new_image"
+                  fi
               done < new_images.txt
 
               # Commit if there are new images
