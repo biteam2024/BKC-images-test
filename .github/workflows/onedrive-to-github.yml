@@ -26,7 +26,7 @@ jobs:
           echo "$response" > response_log.txt
 
           # Parse image URLs safely
-          urls=$(echo "$response" | jq -r '.value[] | select(.file) | .["@microsoft.graph.downloadUrl"] // empty')
+          urls=$(echo "$response" | jq -r '.value[] | select(.file) | {url: .["@microsoft.graph.downloadUrl"], name: .name} | "\(.url) \(.name)"')
           if [[ -z "$urls" ]]; then
               echo "No images found or error in fetching images."
               exit 1
@@ -35,27 +35,37 @@ jobs:
           
           # Download images
           mkdir -p downloaded_images
-          while read -r url; do
-              # Extract the base name from the URL
-              filename=$(basename "$url")
-              
+          while read -r url name; do
               # Sanitize the filename by limiting length and removing special characters
-              sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
+              extension="${name##*.}"  # Get the file extension
+              sanitized_filename=$(echo "$name" | tr -dc '[:alnum:]._-' | cut -c1-30)  # Limit to 30 characters
+              sanitized_filename="$sanitized_filename.$extension"  # Reattach the extension
 
-              # Download the image
-              if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
-                  echo "Downloaded: $sanitized_filename"
+              # Check if the image already exists
+              if [[ ! -f "downloaded_images/$sanitized_filename" ]]; then
+                  # Download the image
+                  if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
+                      echo "Downloaded: $sanitized_filename"
+                  else
+                      echo "Failed to download: $url"
+                  fi
               else
-                  echo "Failed to download: $url"
+                  echo "Image already exists: $sanitized_filename"
               fi
           done < image_urls.txt
 
-      - name: Commit images to GitHub
+      - name: Commit new images to GitHub
         run: |
           git config --local user.name "biteam2024"
           git config --local user.email "bi.analytics@arthdesignbuild.com"
-          git add downloaded_images/*
-          git commit -m "Add images from OneDrive"
-          git push
+
+          # Check if there are any new images to commit
+          if ! git diff --cached --quiet; then
+              git add downloaded_images/*
+              git commit -m "Add new images from OneDrive"
+              git push
+          else
+              echo "No new images to commit."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for pushing changes
