@@ -36,15 +36,16 @@ jobs:
           # Download images
           mkdir -p downloaded_images
           while read -r url name; do
-              # Extract the base name from the URL
-              # filename=$(basename "$url")
+              Extract the base name from the URL
+              filename=$(basename "$url")
+              echo "URL: $filename"
+              Sanitize the filename by limiting length and removing special characters
+              sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
               
-              # Sanitize the filename by limiting length and removing special characters
-              # sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
               ######################################################################################################
-              extension="${name##*.}"  # Get the file extension
-              sanitized_filename=$(echo "$name" | tr -dc '[:alnum:]._-' | cut -c1-30)  # Limit to 30 characters
-              sanitized_filename="$sanitized_filename.$extension"
+              # extension="${name##*.}"  # Get the file extension
+              # sanitized_filename=$(echo "$name" | tr -dc '[:alnum:]._-' | cut -c1-30)  # Limit to 30 characters
+              # sanitized_filename="$sanitized_filename.$extension"
               ##############################################################################################
               # Download the image
               if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
