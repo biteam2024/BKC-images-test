@@ -16,7 +16,7 @@ jobs:
       - name: Fetch images from OneDrive
         id: fetch_images
         run: |
-          # Set your OneDrive access token and folder path
+          # Set your OneDrive access token
           ONEDRIVE_ACCESS_TOKEN="${{ secrets.ONEDRIVE_ACCESS_TOKEN }}"
 
           # Fetch images from OneDrive
@@ -25,79 +25,37 @@ jobs:
 
           echo "$response" > response_log.txt
 
-          # Parse image URLs safely (only select image files)
-          urls=$(echo "$response" | jq -r '.value[] | select(.file and (.file.mimeType | startswith("image/"))) | .["@microsoft.graph.downloadUrl"] // empty')
+          # Parse image URLs safely
+          urls=$(echo "$response" | jq -r '.value[] | select(.file) | .["@microsoft.graph.downloadUrl"] // empty')
           if [[ -z "$urls" ]]; then
               echo "No images found or error in fetching images."
               exit 1
           fi
           echo "$urls" > image_urls.txt
           
-          # Download images with truncated filenames
+          # Download images
           mkdir -p downloaded_images
           while read -r url; do
-              original_filename=$(basename "$url")
-              # Truncate the filename to a maximum of 30 characters (keeping extension)
-              truncated_filename=$(echo "$original_filename" | cut -c 1-30)
-              # Ensure the extension is preserved
-              extension="${truncated_filename##*.}"
-              truncated_filename="${truncated_filename%.*}.$extension"
-
-              # Remove any spaces from the filename
-              truncated_filename=$(echo "$truncated_filename" | tr -d '[:space:]')
+              # Extract the base name from the URL
+              filename=$(basename "$url")
+              
+              # Sanitize the filename by limiting length and removing special characters
+              sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
 
               # Download the image
-              curl -L -o "downloaded_images/$truncated_filename" "$url"
+              if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
+                  echo "Downloaded: $sanitized_filename"
+              else
+                  echo "Failed to download: $url"
+              fi
           done < image_urls.txt
 
-      - name: Check for new images
-        id: check_images
-        run: |
-          # List existing images in the repo
-          existing_images=$(ls downloaded_images)
-
-          # Compare downloaded images with existing images
-          new_images=()
-          for file in downloaded_images/*; do
-              filename=$(basename "$file")
-              if [[ ! " ${existing_images[@]} " =~ " ${filename} " ]]; then
-                  new_images+=("$filename")
-              fi
-          done
-
-          # Save the new images list for the next step
-          if [ ${#new_images[@]} -eq 0 ]; then
-              echo "No new images to commit."
-              exit 0
-          fi
-
-          # Convert array to newline-separated string
-          IFS=$'\n' echo "${new_images[@]}" > new_images.txt
-          echo "New images found: ${new_images[@]}"
-
-      - name: Commit new images to GitHub
+      - name: Commit images to GitHub
         run: |
           git config --local user.name "biteam2024"
           git config --local user.email "bi.analytics@arthdesignbuild.com"
-
-          # Read new images from file and add them to git
-          if [ -f new_images.txt ]; then
-              while read -r new_image; do
-                  # Ensure the image exists before adding
-                  if [ -f "downloaded_images/$new_image" ]; then
-                      git add "downloaded_images/$new_image"
-                  fi
-              done < new_images.txt
-
-              # Commit if there are new images
-              if ! git diff --cached --quiet; then
-                  git commit -m "Add new images from OneDrive"
-                  git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/biteam2024/BKC-images-test.git
-              else
-                  echo "No new images to commit."
-              fi
-          else
-              echo "No new images to commit."
-          fi
+          git add downloaded_images/*
+          git commit -m "Add images from OneDrive"
+          git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for pushing changes
