@@ -21,7 +21,7 @@ jobs:
           FOLDER_PATH="Documents/BKC/BKC%20Input%20Images"  # Change to your folder path
 
           # Fetch images from OneDrive
-          response=$(curl -s -X GET "https://graph.microsoft.com/v1.0/me/drive/root:/$FOLDER_PATH:/children" \
+          response=$(curl -s -X GET "https://graph.microsoft.com/v1.0/users/998e6817-e81a-4c40-a387-34c1ab27b201/drive/root:/$FOLDER_PATH:/children" \
             -H "Authorization: Bearer $ONEDRIVE_ACCESS_TOKEN")
 
           # Print the response for debugging
