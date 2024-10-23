@@ -18,10 +18,10 @@ jobs:
         run: |
           # Set your OneDrive access token and folder path
           ONEDRIVE_ACCESS_TOKEN="${{ secrets.ONEDRIVE_ACCESS_TOKEN }}"
-          FOLDER_PATH="Documents/BKC/BKC%20Input%20Images"  # Change to your folder path
+          FOLDER_PATH="01KWR5ZX2PEZYK2OZVPFFLVJGAPE4RYQEU"  # Change to your folder path
 
           # Fetch images from OneDrive
-          response=$(curl -X GET "https://graph.microsoft.com/v1.0/me/drive/root:/$FOLDER_PATH:/children" \
+          response=$(curl -s -X GET "https://graph.microsoft.com/v1.0/me/drive/items/$FOLDER_ID/children" \
             -H "Authorization: Bearer $ONEDRIVE_ACCESS_TOKEN")
 
           # Parse image URLs
