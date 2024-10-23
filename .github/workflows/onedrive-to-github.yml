@@ -25,8 +25,8 @@ jobs:
 
           echo "$response" > response_log.txt
 
-          # Parse image URLs safely
-          urls=$(echo "$response" | jq -r '.value[] | select(.file) | .["@microsoft.graph.downloadUrl"] // empty')
+          # Parse image URLs safely (only select image files)
+          urls=$(echo "$response" | jq -r '.value[] | select(.file and (.file.mimeType | startswith("image/"))) | .["@microsoft.graph.downloadUrl"] // empty')
           if [[ -z "$urls" ]]; then
               echo "No images found or error in fetching images."
               exit 1
@@ -42,7 +42,10 @@ jobs:
               # Ensure the extension is preserved
               extension="${truncated_filename##*.}"
               truncated_filename="${truncated_filename%.*}.$extension"
-              
+
+              # Remove any spaces from the filename
+              truncated_filename=$(echo "$truncated_filename" | tr -d '[:space:]')
+
               # Download the image
               curl -L -o "downloaded_images/$truncated_filename" "$url"
           done < image_urls.txt
@@ -80,12 +83,17 @@ jobs:
           # Read new images from file and add them to git
           if [ -f new_images.txt ]; then
               while read -r new_image; do
+                  # Enclose filename in quotes to handle spaces
                   git add "downloaded_images/$new_image"
               done < new_images.txt
 
               # Commit if there are new images
-              git commit -m "Add new images from OneDrive"
-              git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/biteam2024/BKC-images-test.git
+              if ! git diff --cached --quiet; then
+                  git commit -m "Add new images from OneDrive"
+                  git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/biteam2024/BKC-images-test.git
+              else
+                  echo "No new images to commit."
+              fi
           else
               echo "No new images to commit."
           fi
