@@ -16,31 +16,13 @@ jobs:
       - name: Fetch images from OneDrive
         id: fetch_images
         run: |
-          # Set your OneDrive access token and folder path
+          # Set your OneDrive access token
           ONEDRIVE_ACCESS_TOKEN="${{ secrets.ONEDRIVE_ACCESS_TOKEN }}"
-          # FOLDER_PATH="Documents/BKC/BKC%20Input%20Images"  # Change to your folder path
 
           # Fetch images from OneDrive
           response=$(curl -s -X GET "https://graph.microsoft.com/v1.0/users/998e6817-e81a-4c40-a387-34c1ab27b201/drive/items/01KWR5ZX2PEZYK2OZVPFFLVJGAPE4RYQEU/children" \
             -H "Authorization: Bearer $ONEDRIVE_ACCESS_TOKEN")
 
-          # Print the response for debugging
-          # echo "Response: $response"
-
-          # # Check if the response is empty
-          # if [[ -z "$response" ]]; then
-          #   echo "Failed to fetch images. Response is empty."
-          #   exit 1
-          # fi
-
-          # # Parse image URLs
-          # echo "$response" | jq -r '.value[] | select(.file != null) | .["@microsoft.graph.downloadUrl"]' > image_urls.txt
-
-          # # Download images
-          # mkdir -p downloaded_images
-          # while read -r url; do
-          #   curl -L -o "downloaded_images/$(basename "$url")" "$url"
-          # done < image_urls.txt
           echo "$response" > response_log.txt
 
           # Parse image URLs safely
@@ -54,7 +36,18 @@ jobs:
           # Download images
           mkdir -p downloaded_images
           while read -r url; do
-              curl -L -o "downloaded_images/$(basename "$url")" "$url"
+              # Extract the base name from the URL
+              filename=$(basename "$url")
+              
+              # Sanitize the filename by limiting length and removing special characters
+              sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
+
+              # Download the image
+              if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
+                  echo "Downloaded: $sanitized_filename"
+              else
+                  echo "Failed to download: $url"
+              fi
           done < image_urls.txt
 
       - name: Commit images to GitHub
