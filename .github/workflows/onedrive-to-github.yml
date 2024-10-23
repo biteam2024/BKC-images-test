@@ -35,18 +35,22 @@ jobs:
           
           # Download images
           mkdir -p downloaded_images
-          while read -r url; do
-              # Extract the base name from the URL
-              filename=$(basename "$url")
-              
+          while read -r url name; do
               # Sanitize the filename by limiting length and removing special characters
-              sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
+              extension="${name##*.}"  # Get the file extension
+              sanitized_filename=$(echo "$name" | tr -dc '[:alnum:]._-' | cut -c1-30)  # Limit to 30 characters
+              sanitized_filename="$sanitized_filename.$extension"  # Reattach the extension
 
-              # Download the image
-              if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
-                  echo "Downloaded: $sanitized_filename"
+              # Check if the image already exists
+              if [[ ! -f "downloaded_images/$sanitized_filename" ]]; then
+                  # Download the image
+                  if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
+                      echo "Downloaded: $sanitized_filename"
+                  else
+                      echo "Failed to download: $url"
+                  fi
               else
-                  echo "Failed to download: $url"
+                  echo "Image already exists: $sanitized_filename"
               fi
           done < image_urls.txt
 
