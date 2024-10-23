@@ -25,55 +25,37 @@ jobs:
 
           echo "$response" > response_log.txt
 
-          # Check if response is empty or null
-          if [[ -z "$response" ]]; then
-              echo "Error: No response from OneDrive API."
-              exit 1
-          fi
-
           # Parse image URLs safely
-          urls=$(echo "$response" | jq -r '.value[] | select(.file) | {url: .["@microsoft.graph.downloadUrl"], name: .name} | "\(.url) \(.name)"')
+          urls=$(echo "$response" | jq -r '.value[] | select(.file) | .["@microsoft.graph.downloadUrl"] // empty')
           if [[ -z "$urls" ]]; then
               echo "No images found or error in fetching images."
               exit 1
           fi
           echo "$urls" > image_urls.txt
           
-          # Ensure the directory exists
-          mkdir -p downloaded_images
-
           # Download images
-          while read -r url name; do
+          mkdir -p downloaded_images
+          while read -r url; do
+              # Extract the base name from the URL
+              filename=$(basename "$url")
+              
               # Sanitize the filename by limiting length and removing special characters
-              extension="${name##*.}"  # Get the file extension
-              sanitized_filename=$(echo "$name" | tr -dc '[:alnum:]._-' | cut -c1-30)  # Limit to 30 characters
-              sanitized_filename="$sanitized_filename.$extension"  # Reattach the extension
+              sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
 
-              # Check if the image already exists
-              if [[ ! -f "downloaded_images/$sanitized_filename" ]]; then
-                  # Download the image
-                  if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
-                      echo "Downloaded: $sanitized_filename"
-                  else
-                      echo "Failed to download: $url"
-                  fi
+              # Download the image
+              if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
+                  echo "Downloaded: $sanitized_filename"
               else
-                  echo "Image already exists: $sanitized_filename"
+                  echo "Failed to download: $url"
               fi
           done < image_urls.txt
 
-      - name: Commit new images to GitHub
+      - name: Commit images to GitHub
         run: |
           git config --local user.name "biteam2024"
           git config --local user.email "bi.analytics@arthdesignbuild.com"
-
-          # Check if there are any new images to commit
-          if [ "$(ls -A downloaded_images)" ]; then  # Check if the directory is not empty
-              git add downloaded_images/*
-              git commit -m "Add new images from OneDrive"
-              git push
-          else
-              echo "No new images to commit."
-          fi
+          git add downloaded_images/*
+          git commit -m "Add images from OneDrive"
+          git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for pushing changes
