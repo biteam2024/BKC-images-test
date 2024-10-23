@@ -1,6 +1,7 @@
 name: Sync OneDrive Images to GitHub
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 * * * *'  # This runs the workflow every hour (adjust as needed)
 
