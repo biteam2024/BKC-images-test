@@ -58,8 +58,24 @@ jobs:
         run: |
           git config --local user.name "biteam2024"
           git config --local user.email "bi.analytics@arthdesignbuild.com"
-          git add downloaded_images/*
-          git commit -m "Add images from OneDrive"
-          git push
+          
+          # Check if the downloaded_images folder exists
+          if [ -d "downloaded_images" ]; then
+              echo "Folder 'downloaded_images' exists."
+          else
+              echo "Folder 'downloaded_images' does not exist. Creating it."
+              mkdir downloaded_images
+          fi
+
+          # Add the images to git
+          git add downloaded_images/* || echo "No new images to add."
+          
+          # Commit and push changes if there are any new images
+          if ! git diff --cached --quiet; then
+              git commit -m "Add images from OneDrive"
+              git push
+          else
+              echo "No changes to commit."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for pushing changes
