@@ -62,7 +62,7 @@ jobs:
           git config --local user.email "bi.analytics@arthdesignbuild.com"
 
           # Check if there are any new images to commit
-          if ! git diff --cached --quiet; then
+          if [ "$(ls -A downloaded_images)" ]; then  # Check if the directory is not empty
               git add downloaded_images/*
               git commit -m "Add new images from OneDrive"
               git push
