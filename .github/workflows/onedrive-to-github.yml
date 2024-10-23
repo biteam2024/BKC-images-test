@@ -35,10 +35,12 @@ jobs:
           
           # Download images
           mkdir -p downloaded_images
-          while read -r url; do
+          while read -r url name; do
               # Extract the base name from the URL
               filename=$(basename "$url")
-              echo "URL: $filename"
+              echo "NAME: $name"
+              extension="${name##*.}"
+              echo "EXTENSION: $extension"
               # Sanitize the filename by limiting length and removing special characters
               sanitized_filename=$(echo "$filename" | tr -dc '[:alnum:]._-' | cut -c1-50)
 
