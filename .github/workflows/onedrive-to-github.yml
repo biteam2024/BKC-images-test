@@ -28,7 +28,8 @@ jobs:
           # Parse image URLs and names safely
           urls=$(echo "$response" | jq -r '.value[] | select(.file) | .["@microsoft.graph.downloadUrl"] // empty')
           names=$(echo "$response" | jq -r '.value[] | select(.file) | .name // empty')
-          
+          echo "ALL names: $names"
+          echo "ALL urls: $urls"
           if [[ -z "$urls" || -z "$names" ]]; then
               echo "No images found or error in fetching images."
               exit 1
