@@ -25,21 +25,36 @@ jobs:
             -H "Authorization: Bearer $ONEDRIVE_ACCESS_TOKEN")
 
           # Print the response for debugging
-          echo "Response: $response"
+          # echo "Response: $response"
 
-          # Check if the response is empty
-          if [[ -z "$response" ]]; then
-            echo "Failed to fetch images. Response is empty."
-            exit 1
+          # # Check if the response is empty
+          # if [[ -z "$response" ]]; then
+          #   echo "Failed to fetch images. Response is empty."
+          #   exit 1
+          # fi
+
+          # # Parse image URLs
+          # echo "$response" | jq -r '.value[] | select(.file != null) | .["@microsoft.graph.downloadUrl"]' > image_urls.txt
+
+          # # Download images
+          # mkdir -p downloaded_images
+          # while read -r url; do
+          #   curl -L -o "downloaded_images/$(basename "$url")" "$url"
+          # done < image_urls.txt
+          echo "$response" > response_log.txt
+
+          # Parse image URLs safely
+          urls=$(echo "$response" | jq -r '.value[] | select(.file) | .["@microsoft.graph.downloadUrl"] // empty')
+          if [[ -z "$urls" ]]; then
+              echo "No images found or error in fetching images."
+              exit 1
           fi
-
-          # Parse image URLs
-          echo "$response" | jq -r '.value[] | select(.file != null) | .@microsoft.graph.downloadUrl' > image_urls.txt
-
+          echo "$urls" > image_urls.txt
+          
           # Download images
           mkdir -p downloaded_images
           while read -r url; do
-            curl -L -o "downloaded_images/$(basename "$url")" "$url"
+              curl -L -o "downloaded_images/$(basename "$url")" "$url"
           done < image_urls.txt
 
       - name: Commit images to GitHub
