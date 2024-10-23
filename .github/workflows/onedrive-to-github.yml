@@ -27,6 +27,7 @@ jobs:
 
           # Parse image URLs safely
           urls=$(echo "$response" | jq -r '.value[] | select(.file) | .["@microsoft.graph.downloadUrl"] // empty')
+          names=$(echo "$response" | jq -r '.value[] | select(.file) | .[name] // empty')
           if [[ -z "$urls" ]]; then
               echo "No images found or error in fetching images."
               exit 1
@@ -35,10 +36,10 @@ jobs:
           
           # Download images
           mkdir -p downloaded_images
-          while read -r url name; do
+          while read -r url names; do
               # Extract the base name from the URL
               filename=$(basename "$url")
-              echo "NAME: $name"
+              echo "NAME: $names"
               extension="${name##*.}"
               echo "EXTENSION: $extension"
               # Sanitize the filename by limiting length and removing special characters
