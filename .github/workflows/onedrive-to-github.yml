@@ -17,7 +17,7 @@ jobs:
         run: |
           # Set your OneDrive access token and folder path
           ONEDRIVE_ACCESS_TOKEN="${{ secrets.ONEDRIVE_ACCESS_TOKEN }}"
-          FOLDER_PATH="path_to_your_folder"  # Change to your folder path
+          FOLDER_PATH="Documents/BKC/BKC Input Images"  # Change to your folder path
 
           # Fetch images from OneDrive
           response=$(curl -X GET "https://graph.microsoft.com/v1.0/me/drive/root:/$FOLDER_PATH:/children" \
@@ -34,8 +34,8 @@ jobs:
 
       - name: Commit images to GitHub
         run: |
-          git config --local user.name "GitHub Action"
-          git config --local user.email "action@github.com"
+          git config --local user.name "biteam2024"
+          git config --local user.email "bi.analytics@arthdesignbuild.com"
           git add downloaded_images/*
           git commit -m "Add images from OneDrive"
           git push
