@@ -3,7 +3,7 @@ name: Sync OneDrive Images to GitHub
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # This runs the workflow every hour (adjust as needed)
+    - cron: '0 * * * *'  # Runs the workflow every hour
 
 jobs:
   sync:
@@ -25,25 +25,21 @@ jobs:
 
           echo "$response" > response_log.txt
 
-          # Parse image URLs safely
+          # Parse image URLs and names safely
           urls=$(echo "$response" | jq -r '.value[] | select(.file) | .["@microsoft.graph.downloadUrl"] // empty')
           names=$(echo "$response" | jq -r '.value[] | select(.file) | .name // empty')
+          
           if [[ -z "$urls" || -z "$names" ]]; then
               echo "No images found or error in fetching images."
               exit 1
           fi
-          echo "$urls" > image_urls.txt
-          
+
           # Download images
           mkdir -p downloaded_images
-          while read -r url name; do
-              # Extract the base name from the URL
-              filename=$(basename "$url")
-              echo "NAME: $name"
-              extension="${name##*.}"
-              echo "EXTENSION: $extension"
-              # Sanitize the filename by limiting length and removing special characters
-              sanitized_filename=$(echo "$name" | tr -dc '[:alnum:]._-' | cut -c1-50)
+          paste <(echo "$urls") <(echo "$names") | while IFS=$'\t' read -r url name; do
+              # Sanitize filename
+              sanitized_filename=$(echo "$name" | tr -dc '[:alnum:]._-')
+              sanitized_filename=$(echo "$sanitized_filename" | cut -c1-50)  # Limit to 50 characters
 
               # Download the image
               if curl -L -o "downloaded_images/$sanitized_filename" "$url"; then
@@ -51,7 +47,7 @@ jobs:
               else
                   echo "Failed to download: $url"
               fi
-          done < image_urls.txt
+          done
 
       - name: Commit images to GitHub
         run: |
