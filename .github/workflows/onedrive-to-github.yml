@@ -3,7 +3,7 @@ name: Sync OneDrive Images to GitHub
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # Runs the workflow every hour
+    - cron: '0 11 * * 2,3'  # Runs every Tuesday at 15:00 (11 AM)
 
 jobs:
   sync:
@@ -54,8 +54,11 @@ jobs:
         run: |
           git config --local user.name "biteam2024"
           git config --local user.email "bi.analytics@arthdesignbuild.com"
-          git add downloaded_images/*
-          git commit -m "Add images from OneDrive"
-          git push
+          if [ -n "$(ls -A downloaded_images)" ]; then
+              git add downloaded_images/*
+              git commit -m "Add images from OneDrive"
+              git push
+          else
+              echo "No new images to add."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for pushing changes
