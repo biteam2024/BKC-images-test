@@ -1,0 +1,43 @@
+name: Sync OneDrive Images to GitHub
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # This runs the workflow every hour (adjust as needed)
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Fetch images from OneDrive
+        id: fetch_images
+        run: |
+          # Set your OneDrive access token and folder path
+          ONEDRIVE_ACCESS_TOKEN="${{ secrets.ONEDRIVE_ACCESS_TOKEN }}"
+          FOLDER_PATH="path_to_your_folder"  # Change to your folder path
+
+          # Fetch images from OneDrive
+          response=$(curl -X GET "https://graph.microsoft.com/v1.0/me/drive/root:/$FOLDER_PATH:/children" \
+            -H "Authorization: Bearer $ONEDRIVE_ACCESS_TOKEN")
+
+          # Parse image URLs
+          echo "$response" | jq -r '.value[] | select(.file) | .@microsoft.graph.downloadUrl' > image_urls.txt
+
+          # Download images
+          mkdir -p downloaded_images
+          while read -r url; do
+            curl -L -o "downloaded_images/$(basename "$url")" "$url"
+          done < image_urls.txt
+
+      - name: Commit images to GitHub
+        run: |
+          git config --local user.name "GitHub Action"
+          git config --local user.email "action@github.com"
+          git add downloaded_images/*
+          git commit -m "Add images from OneDrive"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for pushing changes
