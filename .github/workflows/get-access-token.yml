@@ -40,7 +40,7 @@ jobs:
         id: fetch_images
         run: |
           # Use the access token retrieved from the previous job
-          access_token="${{ env.access_token }}"
+          access_token="${{ needs.get_access_token.outputs.access_token }}"
           echo "Access Token Length2: ${#access_token}"
 
           # Fetch images from OneDrive using the access token
