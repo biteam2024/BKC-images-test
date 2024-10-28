@@ -15,13 +15,23 @@ jobs:
       - name: Request Access Token
         id: get_token
         run: |
+          # Make the request to get the access token
           response=$(curl -X POST "https://login.microsoftonline.com/96f98c92-0eac-40be-80a7-9c8224a25a66/oauth2/v2.0/token" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "client_id=91597372-2261-4f87-9238-10af1457aeef&client_secret=ku.8Q~hgoBkxloBJC6ZVszUhFUleZWdQUmJibctx&scope=https://graph.microsoft.com/.default&grant_type=client_credentials")
-          
-          # Extract the access token from the response
-          access_token=$(echo "$response" | jq -r '.access_token')
-          echo "::set-output name=access_token::$access_token"
+
+          # Print the full response for debugging purposes
+          echo "Full response: $response"
+
+          # Check if the response contains an access token
+          if echo "$response" | jq -e '.access_token' >/dev/null; then
+            access_token=$(echo "$response" | jq -r '.access_token')
+            # Use the new environment file method to set the output
+            echo "access_token=$access_token" >> $GITHUB_ENV
+          else
+            echo "Error: Failed to retrieve access token. Response: $response"
+            exit 1
+          fi
 
   sync:
     runs-on: ubuntu-latest
