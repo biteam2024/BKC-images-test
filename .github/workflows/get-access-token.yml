@@ -1,0 +1,26 @@
+name: Get Access Token
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  request_access_token:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Request Access Token
+        id: get_token
+        run: |
+          response=$(curl -X POST "https://login.microsoftonline.com/96f98c92-0eac-40be-80a7-9c8224a25a66/oauth2/v2.0/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "client_id=91597372-2261-4f87-9238-10af1457aeef&client_secret=ku.8Q~hgoBkxloBJC6ZVszUhFUleZWdQUmJibctx&scope=https://graph.microsoft.com/.default&grant_type=client_credentials")
+          
+          # Extract access token from the response using jq
+          access_token=$(echo "$response" | jq -r '.access_token')
+          
+          # Store the token in an environment variable for the job
+          echo "access_token=$access_token" >> $GITHUB_ENV
+
+      - name: Display Access Token
+        run: |
+          echo "Access Token: ${{ env.access_token }}"
